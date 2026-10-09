@@ -134,6 +134,7 @@ button:focus-visible { outline: 2px solid var(--safety); outline-offset: 2px; }
     <button class="ok" id="awayOk">工場に戻る</button>
   </div>
 </div>
+
 <script>
 // ===== core: production line logic (no DOM) =====
 const STAGES = [
@@ -418,7 +419,7 @@ function frame(now) {
   const wall = Date.now(), gap = wall - lastWall;
   lastWall = wall;
   if (gap > 20000) catchUp(gap);
-  else advance(S, Math.min(gap, 2000) / 1000);
+  else advance(S, gap / 1000);
   if (now - uiT > 250) { uiT = now; render(); }
   drawScene(now);
   requestAnimationFrame(frame);
@@ -430,7 +431,7 @@ function start(data) {
   S = (data && data.state) || load();
   let away = 0;
   if (!S) S = newFactory();
-  else if (!(data && data.state)) away = Date.now() - (S.t || Date.now());
+  else away = Date.now() - (S.t || Date.now());
   document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
     bulk = +b.dataset.n;
     document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -438,13 +439,14 @@ function start(data) {
   }));
   $('awayOk').addEventListener('click', () => { $('away').hidden = true; });
   if (away > 60000) catchUp(away);
+  else if (away > 0) advance(S, away / 1000);
   render();
   lastWall = Date.now();
   requestAnimationFrame(frame);
   setInterval(save, 5000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   window.addEventListener('pagehide', save);
-  try { if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(() => ({ state: S })); } catch (e) {}
+  try { if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(() => { S.t = Date.now(); return { state: S }; }); } catch (e) {}
 }
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>

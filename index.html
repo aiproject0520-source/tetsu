@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14181b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="鉄と歯車">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; touch-action: manipulation; overscroll-behavior-y: none; }
+[hidden] { display: none !important; }
+</style>
+<title>鉄と歯車</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=IBM+Plex+Sans+JP:wght@400;700&display=swap">
+<style>
+/* Layout: a shop-floor console — money and rank up top, the zigzag conveyor scene, then one row per production line. Single dark theme on purpose (steel and safety yellow). */
+:root {
+  color-scheme: dark;
+  --floor: #14181b;
+  --steel: #1e2428;
+  --steel-2: #283036;
+  --rivet: #38434b;
+  --chalk: #e3e7e9;
+  --dim: #8d9aa2;
+  --safety: #f2c230;
+  --safety-ink: #241c02;
+  --jam: #e5533d;
+  --starve: #6aa6d8;
+  --run: #7ec06a;
+  --pixel: "DotGothic16", "Hiragino Kaku Gothic ProN", "Noto Sans JP", monospace;
+  --body: "IBM Plex Sans JP", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--floor); color: var(--chalk); font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+.app { max-width: 480px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 32px; display: flex; flex-direction: column; gap: 12px; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--safety); outline-offset: 2px; }
+.px { font-family: var(--pixel); font-variant-numeric: tabular-nums; }
+
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.top h1 { margin: 0; font-family: var(--pixel); font-weight: 400; font-size: 22px; line-height: 1.2; }
+.rank { display: inline-block; font-family: var(--pixel); font-size: 12px; color: var(--safety-ink); background: var(--safety); padding: 0 8px; border-radius: 2px; letter-spacing: .05em; }
+.wallet { text-align: right; }
+.wallet b { display: block; font-family: var(--pixel); font-weight: 400; font-size: 24px; color: var(--safety); line-height: 1.15; }
+.wallet small { font-family: var(--pixel); font-size: 12px; color: var(--dim); }
+
+.scene { background: #2b3238; border: 2px solid var(--rivet); border-radius: 4px; overflow: hidden; position: relative; }
+.scene::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: repeating-linear-gradient(-45deg, var(--safety) 0 6px, #1b1b1b 6px 12px); opacity: .9; }
+.scene canvas { display: block; width: 100%; height: auto; image-rendering: crisp-edges; image-rendering: pixelated; }
+
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bar p { margin: 0; font-size: 12px; color: var(--dim); }
+.seg { display: flex; border: 1px solid var(--rivet); border-radius: 4px; overflow: hidden; }
+.seg button { padding: 6px 12px; font-family: var(--pixel); font-size: 14px; color: var(--dim); }
+.seg button[aria-pressed="true"] { background: var(--steel-2); color: var(--safety); }
+
+.lines { display: flex; flex-direction: column; gap: 8px; }
+.line { background: var(--steel); border: 1px solid var(--rivet); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.line.jam { border-color: var(--jam); box-shadow: inset 4px 0 0 var(--jam); }
+.line.starved { box-shadow: inset 4px 0 0 var(--starve); }
+.line .head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.line canvas.ico { width: 28px; height: 28px; image-rendering: crisp-edges; image-rendering: pixelated; background: var(--steel-2); border-radius: 3px; }
+.line .nm strong { font-size: 15px; }
+.line .nm span { font-size: 12px; color: var(--dim); margin-left: 6px; }
+.line .nm p { margin: 0; font-family: var(--pixel); font-size: 12px; color: var(--dim); }
+.chip { font-family: var(--pixel); font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid currentColor; white-space: nowrap; }
+.chip.ok { color: var(--run); } .chip.jam { color: var(--jam); } .chip.starved { color: var(--starve); } .chip.empty { color: var(--dim); }
+.util { height: 6px; background: var(--floor); border-radius: 2px; overflow: hidden; }
+.util span { display: block; height: 100%; background: var(--run); }
+.line.jam .util span { background: var(--jam); }
+.line.starved .util span { background: var(--starve); }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mk { padding: 8px 8px; border-radius: 4px; background: var(--safety); color: var(--safety-ink); box-shadow: 0 3px 0 #9a7a12; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.mk small { font-size: 11px; }
+.mk b { font-family: var(--pixel); font-weight: 400; font-size: 15px; }
+.mk.alt { background: var(--steel-2); color: var(--chalk); box-shadow: 0 3px 0 var(--rivet); border: 1px solid var(--rivet); }
+.mk:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #9a7a12; }
+.mk:disabled { background: var(--steel-2); color: var(--dim); box-shadow: 0 3px 0 var(--rivet); opacity: .7; cursor: default; }
+.locked { background: transparent; border: 1px dashed var(--rivet); border-radius: 4px; padding: 10px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.locked p { margin: 0; font-size: 12px; color: var(--dim); }
+.locked strong { font-size: 15px; }
+.teaser { text-align: center; font-size: 12px; color: var(--dim); font-family: var(--pixel); }
+.tip { font-size: 12px; color: var(--dim); margin: 0; border-left: 2px solid var(--safety); padding-left: 8px; }
+
+.veil { position: fixed; inset: 0; z-index: 10; background: rgba(10,12,14,.82); display: grid; place-items: center; padding: 16px; }
+.card { width: 100%; max-width: 380px; background: var(--steel); border: 1px solid var(--safety); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.card h3 { margin: 0; font-family: var(--pixel); font-weight: 400; font-size: 20px; color: var(--safety); }
+.card dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 14px; }
+.card dt { color: var(--dim); } .card dd { margin: 0; font-family: var(--pixel); font-size: 16px; text-align: right; }
+.card .ok { padding: 11px; border-radius: 4px; background: var(--safety); color: var(--safety-ink); font-family: var(--pixel); font-size: 16px; }
+@media (prefers-reduced-motion: reduce) { .mk:active { transform: none; } }
+</style>
+
+
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div>
+      <span class="rank" id="rank">町工場</span>
+      <h1>鉄と歯車</h1>
+    </div>
+    <div class="wallet"><b id="money">¥0</b><small id="income">+0円/秒</small></div>
+  </header>
+
+  <div class="scene"><canvas id="cv" width="160" height="40" aria-label="生産ラインのようす"></canvas></div>
+
+  <p class="tip" id="tip"></p>
+
+  <div class="bar">
+    <p>使わなかった部品は、その場で出荷して売れます</p>
+    <div class="seg" role="group" aria-label="まとめ買い">
+      <button aria-pressed="true" data-n="1">×1</button>
+      <button aria-pressed="false" data-n="10">×10</button>
+    </div>
+  </div>
+
+  <div class="lines" id="lines"></div>
+</main>
+
+<div class="veil" id="away" hidden>
+  <div class="card" role="dialog" aria-labelledby="awayT">
+    <h3 id="awayT">留守のあいだに</h3>
+    <dl id="awayDl"></dl>
+    <button class="ok" id="awayOk">工場に戻る</button>
+  </div>
+</div>
+<script>
+// ===== core: production line logic (no DOM) =====
+const STAGES = [
+  { name: '鉄鉱石', mac: '採掘機',     k: 0, price: 1,     rate: 2,   cost: 10,    unlock: 0 },
+  { name: '鉄板',   mac: '圧延機',     k: 2, price: 4,     rate: 1.2, cost: 60,    unlock: 150 },
+  { name: '歯車',   mac: '歯切り盤',   k: 2, price: 16,    rate: 1,   cost: 400,   unlock: 2500 },
+  { name: '変速機', mac: '組立台',     k: 3, price: 100,   rate: 0.8, cost: 3000,  unlock: 3e4 },
+  { name: 'エンジン', mac: 'エンジン工房', k: 2, price: 420, rate: 0.6, cost: 2.5e4, unlock: 4e5 },
+  { name: '自動車', mac: '自動車ライン', k: 4, price: 3600,  rate: 0.4, cost: 2.5e5, unlock: 6e6 },
+  { name: '新幹線', mac: '車両工場',   k: 8, price: 60000, rate: 0.2, cost: 3e6,   unlock: 1.2e8 },
+];
+const RANKS = [[0, '町工場'], [30, '有限会社'], [500, '中小企業'], [8000, '中堅メーカー'], [1e5, '大企業'], [1e6, '財閥'], [1e7, '世界の工場']];
+
+function newFactory() {
+  return { v: 1, t: Date.now(), money: 20, earned: 0,
+    lines: STAGES.map((_, i) => ({ open: i === 0, n: i === 0 ? 1 : 0, sp: 0 })) };
+}
+const macCost = (s, i) => Math.ceil(STAGES[i].cost * 1.15 ** s.lines[i].n);
+const spCost = (s, i) => Math.ceil(STAGES[i].cost * 15 * 2.4 ** s.lines[i].sp);
+const capOf = (s, i) => { const l = s.lines[i]; return l.open ? l.n * STAGES[i].rate * 1.25 ** l.sp : 0; };
+
+// steady-state flow through the line; everything not used downstream is shipped
+function flow(s) {
+  const out = [];
+  let avail = 0;
+  for (let i = 0; i < STAGES.length; i++) {
+    const c = capOf(s, i);
+    let f;
+    if (i === 0) f = c;
+    else f = Math.min(c, avail / STAGES[i].k);
+    if (i > 0) out[i - 1].ship = avail - f * STAGES[i].k;
+    out.push({ cap: c, f, ship: 0, util: c > 0 ? f / c : 0 });
+    avail = f;
+  }
+  out[out.length - 1].ship = avail;
+  let income = 0;
+  out.forEach((o, i) => { income += o.ship * STAGES[i].price; });
+  // status per open stage
+  out.forEach((o, i) => {
+    const open = s.lines[i].open;
+    const next = out[i + 1] && s.lines[i + 1].open ? out[i + 1] : null;
+    if (!open) o.state = 'closed';
+    else if (o.cap === 0) o.state = 'empty';
+    else if (i > 0 && o.util < 0.999) o.state = 'starved';
+    else if (next && next.util >= 0.999 && o.ship > 1e-9) o.state = 'jam';
+    else o.state = 'ok';
+  });
+  return { st: out, income };
+}
+function rankOf(income) {
+  let r = RANKS[0][1];
+  for (const [v, n] of RANKS) if (income >= v) r = n;
+  return r;
+}
+function buyMac(s, i) {
+  if (!s.lines[i].open) return false;
+  const c = macCost(s, i);
+  if (s.money < c) return false;
+  s.money -= c; s.lines[i].n++; return true;
+}
+function buySp(s, i) {
+  if (!s.lines[i].open || !s.lines[i].n) return false;
+  const c = spCost(s, i);
+  if (s.money < c) return false;
+  s.money -= c; s.lines[i].sp++; return true;
+}
+function openLine(s, i) {
+  if (s.lines[i].open || (i > 0 && !s.lines[i - 1].open)) return false;
+  const c = STAGES[i].unlock;
+  if (s.money < c) return false;
+  s.money -= c; s.lines[i].open = true; s.lines[i].n = 1; return true;
+}
+function advance(s, sec) {
+  const g = flow(s).income * sec;
+  s.money += g; s.earned += g;
+  return g;
+}
+// ===== ui =====
+const KEY = 'tetsu-to-haguruma-v1';
+let S = null, bulk = 1, builtFor = -1;
+const $ = id => document.getElementById(id);
+
+function fmt(n) {
+  n = Math.max(0, n);
+  if (n < 10) return n.toFixed(n < 1 && n > 0 ? 2 : 1).replace(/\.0$/, '');
+  if (n < 10000) return Math.floor(n).toLocaleString('ja-JP');
+  for (const [u, nm] of [[1e20, '垓'], [1e16, '京'], [1e12, '兆'], [1e8, '億'], [1e4, '万']]) {
+    if (n >= u) { const v = n / u; if (v >= 10000) return n.toExponential(2); return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : Math.floor(v)) + nm; }
+  }
+}
+const yen = n => '¥' + fmt(n);
+
+function save() { if (!S) return; S.t = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return null;
+    const s = JSON.parse(raw); if (!s || s.v !== 1 || !Array.isArray(s.lines)) return null;
+    const base = newFactory();
+    s.lines = base.lines.map((l, i) => Object.assign(l, s.lines[i] || {}));
+    return s;
+  } catch (e) { return null; }
+}
+
+// ---- pixel art ----
+const PAL = { k: '#15191c', m: '#7a8894', M: '#566270', y: '#f2c230', r: '#e5533d' };
+const ACC = ['#b07a4a', '#c8ccd4', '#d9a43a', '#4a8ac0', '#c0453a', '#2f7fd0', '#f4f6fa'];
+const ICONS = [
+  { p: { s: '#7a5a46', S: '#b07a4a' }, r: ["..kkk..", ".kSsSk.", "kssSssk", "kSsssSk", "ksSsssk", ".kSssk.", "..kkk.."] },
+  { p: { p: '#c8ccd4', P: '#8a909a' }, r: [".......", ".......", "kkkkkkk", "kpppppk", "kPPPPPk", "kkkkkkk", "......."] },
+  { p: { g: '#d9a43a' }, r: [".k.k.k.", "kgggggk", ".gg.gg.", "kg...gk", ".gg.gg.", "kgggggk", ".k.k.k."] },
+  { p: { b: '#4a8ac0', g: '#d9a43a' }, r: ["kkkkkkk", "kbbbbbk", "kbgggbk", "kbg.gbk", "kbgggbk", "kbbbbbk", "kkkkkkk"] },
+  { p: { e: '#c0453a', E: '#8a2e26' }, r: [".kk.kk.", "keekeek", "kkkkkkk", "keeeeek", "keeeeek", "kEEEEEk", "kkkkkkk"] },
+  { p: { c: '#2f7fd0', w: '#cfe8ff' }, r: [".......", "..kkk..", ".kwwck.", "kccccck", "kccccck", ".kk.kk.", "......."] },
+  { p: { w: '#f4f6fa', b: '#2a5ab8' }, r: [".......", "....kkk", "..kwwww", ".kwbbbb", "kwwwwww", "kbbbbbb", ".kkkkkk"] },
+];
+const MACHINE = [
+  "..kkkkkkkkkk..",
+  "..kaaaaaaaak..",
+  "..kaaaaaaaak..",
+  "..kkkkkkkkkk..",
+  "...kMk..kMk...",
+  "...kMk..kMk...",
+  "..kkkkkkkkkk..",
+  ".kmmmmmmmmmmk.",
+  ".kmmkkkkkkmmk.",
+  ".kmmkLLLLkmmk.",
+  ".kmmkkkkkkmmk.",
+  ".kmmmmmmmmmmk.",
+  "kykykykykykyky",
+  "kkkkkkkkkkkkkk"];
+function blit(ctx, rows, x, y, pal) {
+  for (let j = 0; j < rows.length; j++) for (let i = 0; i < rows[j].length; i++) {
+    const c = rows[j][i];
+    if (c === '.') continue;
+    const col = pal[c] || PAL[c];
+    if (!col) continue;
+    ctx.fillStyle = col; ctx.fillRect(x + i, y + j, 1, 1);
+  }
+}
+function iconCanvas(i) {
+  const c = document.createElement('canvas'); c.width = 9; c.height = 9; c.className = 'ico';
+  blit(c.getContext('2d'), ICONS[i].r, 1, 1, ICONS[i].p);
+  return c;
+}
+
+// ---- scene ----
+const ROW = 22;
+function openCount() { return S.lines.filter(l => l.open).length; }
+function drawScene(now) {
+  const cv = $('cv'), n = openCount();
+  const H = 6 + n * ROW + 6;
+  if (cv.height !== H) cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#2b3238'; ctx.fillRect(0, 0, 160, H);
+  // floor plates
+  ctx.fillStyle = '#323a41';
+  for (let y = 0; y < H; y += 8) for (let x = (y / 8) % 2 ? 0 : 8; x < 160; x += 16) ctx.fillRect(x, y, 8, 8);
+  const fl = flow(S).st;
+  for (let i = 0; i < n; i++) {
+    const y = 6 + i * ROW, left = i % 2 === 0, o = fl[i];
+    const mx = left ? 3 : 143;
+    const beltY = y + 9;
+    const bx0 = left ? 18 : 5, bx1 = left ? 155 : 142;
+    // belt
+    ctx.fillStyle = '#1a1e21'; ctx.fillRect(bx0, beltY - 1, bx1 - bx0, 5);
+    ctx.fillStyle = '#3c454c'; ctx.fillRect(bx0, beltY, bx1 - bx0, 3);
+    const run = o.f > 0;
+    const sp = run ? 10 + o.util * 14 : 0;
+    const off = (now / 1000 * sp) % 6;
+    ctx.fillStyle = '#596670';
+    for (let x = 0; x < bx1 - bx0; x += 6) {
+      const px = left ? bx0 + ((x + off) % (bx1 - bx0)) : bx1 - 1 - ((x + off) % (bx1 - bx0));
+      ctx.fillRect(Math.floor(px), beltY + 1, 1, 1);
+    }
+    // drop chute to next row
+    if (i < n - 1) {
+      const cx = left ? 152 : 5;
+      ctx.fillStyle = '#1a1e21'; ctx.fillRect(cx, beltY + 3, 4, ROW - 6);
+      ctx.fillStyle = '#3c454c'; ctx.fillRect(cx + 1, beltY + 3, 2, ROW - 6);
+    }
+    // items
+    if (run) {
+      const cnt = Math.max(1, Math.min(9, Math.round(1 + Math.log10(o.f + 1) * 4)));
+      const span = bx1 - bx0 - 8, gap = span / cnt;
+      for (let k = 0; k < cnt; k++) {
+        let d = (k * gap + now / 1000 * sp) % span;
+        const ix = left ? bx0 + d : bx1 - 8 - d;
+        blit(ctx, ICONS[i].r, Math.floor(ix), beltY - 5, ICONS[i].p);
+      }
+    }
+    // machine
+    const lamp = o.state === 'jam' ? (Math.floor(now / 300) % 2 ? '#e5533d' : '#5a2018') : run ? (Math.floor(now / 200 + i) % 2 ? ACC[i] : '#f2c230') : '#3a444b';
+    const press = run && Math.floor(now / 250 + i) % 2 ? 1 : 0;
+    const rows = MACHINE.map((r, j) => (j === 4 || j === 5) && press ? r.replace(/M/g, 'm') : r);
+    blit(ctx, rows, mx, y + 1, { a: ACC[i], L: lamp });
+    if (o.state === 'jam') { ctx.fillStyle = '#e5533d'; ctx.fillRect(mx + 6, y - 4, 2, 3); ctx.fillRect(mx + 6, y, 2, 1); }
+  }
+}
+
+// ---- lines ----
+function bulkCost(s, i, n) {
+  let c = 0;
+  for (let j = 0; j < n; j++) c += Math.ceil(STAGES[i].cost * 1.15 ** (s.lines[i].n + j));
+  return c;
+}
+function buildLines() {
+  const box = $('lines'); box.innerHTML = '';
+  const n = openCount();
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('div');
+    el.className = 'line'; el.id = 'ln-' + i;
+    el.innerHTML = `<div class="head"><span id="ic-${i}"></span><div class="nm"><strong>${STAGES[i].name}</strong><span>${STAGES[i].mac}</span><p id="fl-${i}"></p></div><span class="chip" id="ch-${i}"></span></div>
+      <div class="util"><span id="ut-${i}"></span></div>
+      <div class="btns"><button class="mk" id="bm-${i}"><small id="bml-${i}"></small><b id="bmc-${i}"></b></button><button class="mk alt" id="bs-${i}"><small id="bsl-${i}"></small><b id="bsc-${i}"></b></button></div>`;
+    box.appendChild(el);
+    $('ic-' + i).replaceWith(iconCanvas(i));
+    $('bm-' + i).addEventListener('click', () => { let k = 0; while (k < bulk && buyMac(S, i)) k++; if (k) { save(); render(); } });
+    $('bs-' + i).addEventListener('click', () => { if (buySp(S, i)) { save(); render(); } });
+  }
+  if (n < STAGES.length) {
+    const el = document.createElement('div');
+    el.className = 'locked';
+    el.innerHTML = `<div><strong>${STAGES[n].name}のラインを開く</strong><p>${STAGES[n - 1].name}を${STAGES[n].k}つ使って${STAGES[n].name}を作る・1個 ${yen(STAGES[n].price)}</p></div><button class="mk" id="open"><small>開設</small><b>${yen(STAGES[n].unlock)}</b></button>`;
+    box.appendChild(el);
+    $('open').addEventListener('click', () => { if (openLine(S, n)) { save(); render(); } });
+    if (n + 1 < STAGES.length) {
+      const t = document.createElement('p'); t.className = 'teaser'; t.textContent = `この先、あと${STAGES.length - n - 1}つの工程があります`;
+      box.appendChild(t);
+    }
+  }
+  builtFor = n;
+}
+const STATE_TXT = { ok: '順調', jam: '詰まり気味', starved: '材料不足', empty: '機械なし' };
+function rate(v) { return v >= 100 ? fmt(v) : v >= 1 ? v.toFixed(1) : v.toFixed(2); }
+function render() {
+  if (builtFor !== openCount()) buildLines();
+  const F = flow(S), st = F.st;
+  $('money').textContent = yen(S.money);
+  $('income').textContent = `+${fmt(F.income)}円/秒`;
+  $('rank').textContent = rankOf(F.income);
+  const n = openCount();
+  for (let i = 0; i < n; i++) {
+    const o = st[i], l = S.lines[i];
+    $('ln-' + i).className = 'line ' + (o.state === 'jam' ? 'jam' : o.state === 'starved' ? 'starved' : '');
+    const ch = $('ch-' + i); ch.textContent = STATE_TXT[o.state] || ''; ch.className = 'chip ' + o.state;
+    $('ut-' + i).style.width = Math.round(o.util * 100) + '%';
+    $('fl-' + i).textContent = `×${l.n}台・速度Lv${l.sp}　生産 ${rate(o.f)}/秒・出荷 ${rate(o.ship)}/秒`;
+    const bc = bulk === 1 ? macCost(S, i) : bulkCost(S, i, bulk);
+    $('bml-' + i).textContent = `${STAGES[i].mac} +${bulk}`;
+    $('bmc-' + i).textContent = yen(bc);
+    $('bm-' + i).disabled = S.money < (bulk === 1 ? bc : macCost(S, i));
+    $('bsl-' + i).textContent = `速度 ×1.25`;
+    $('bsc-' + i).textContent = yen(spCost(S, i));
+    $('bs-' + i).disabled = S.money < spCost(S, i) || !l.n;
+  }
+  const ob = $('open');
+  if (ob) ob.disabled = S.money < STAGES[n].unlock;
+  // one line of advice
+  let tip;
+  const jam = st.findIndex((o, i) => i < n && o.state === 'jam');
+  const starved = st.findIndex((o, i) => i < n && o.state === 'starved');
+  if (jam >= 0) tip = `${STAGES[jam].name}が余って安く出荷されています。${STAGES[jam + 1].mac}を増やすと、もっと高く売れます。`;
+  else if (starved >= 0) tip = `${STAGES[starved].mac}が材料待ちです。${STAGES[starved - 1].mac}を増やしましょう。`;
+  else if (n < STAGES.length) tip = `ラインは釣り合っています。${yen(STAGES[n].unlock)}貯まれば${STAGES[n].name}のラインを開けます。`;
+  else tip = '全工程が稼働中。速度を上げて、世界の工場を目指しましょう。';
+  $('tip').textContent = tip;
+}
+
+// ---- away ----
+function catchUp(ms) {
+  const sec = Math.min(ms / 1000, 12 * 3600);
+  const g = advance(S, sec);
+  if (g <= 0) return;
+  $('awayDl').innerHTML = `<dt>留守の時間</dt><dd>${Math.floor(sec / 3600)}時間${Math.floor(sec % 3600 / 60)}分${ms / 1000 > 43200 ? '（上限）' : ''}</dd><dt>売り上げ</dt><dd>${yen(g)}</dd>`;
+  $('away').hidden = false;
+  save();
+}
+
+// ---- loop ----
+let lastWall = Date.now(), uiT = 0;
+function frame(now) {
+  const wall = Date.now(), gap = wall - lastWall;
+  lastWall = wall;
+  if (gap > 20000) catchUp(gap);
+  else advance(S, Math.min(gap, 2000) / 1000);
+  if (now - uiT > 250) { uiT = now; render(); }
+  drawScene(now);
+  requestAnimationFrame(frame);
+}
+let started = false;
+function start(data) {
+  if (started) return;
+  started = true;
+  S = (data && data.state) || load();
+  let away = 0;
+  if (!S) S = newFactory();
+  else if (!(data && data.state)) away = Date.now() - (S.t || Date.now());
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    bulk = +b.dataset.n;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
+  $('awayOk').addEventListener('click', () => { $('away').hidden = true; });
+  if (away > 60000) catchUp(away);
+  render();
+  lastWall = Date.now();
+  requestAnimationFrame(frame);
+  setInterval(save, 5000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+  try { if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === 'function') window.claude.hot.snapshot(() => ({ state: S })); } catch (e) {}
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
